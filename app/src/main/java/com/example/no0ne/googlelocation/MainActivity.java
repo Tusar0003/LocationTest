@@ -20,9 +20,19 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MainActivity extends AppCompatActivity
-        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
+        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, OnMapReadyCallback {
 
     private static final String LOG_TAG = "MAIN ACTIVITY LOG";
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
@@ -34,12 +44,21 @@ public class MainActivity extends AppCompatActivity
 
     private Location mLocation;
 
+    SupportMapFragment mapFragment;
+
+    GoogleMap googleMap;
+    private Marker currentPositionMarker = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         mOutputTextView = findViewById(R.id.text_view_output);
+
+        mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
 
         buildGoogleApiClient();
         checkLocationPermission();
@@ -133,6 +152,25 @@ public class MainActivity extends AppCompatActivity
 //        mOutputTextView.setText(Double.toString());
         String value = location.getLatitude() + " + " + location.getLongitude();
         mOutputTextView.setText(value);
+
+        LatLng  latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        CameraPosition cameraPosition = new CameraPosition.Builder()
+                .target(latLng).zoom(14).build();
+
+        // mMap.clear(); // Call if You need To Clear Map
+        if (currentPositionMarker == null)
+            currentPositionMarker = googleMap.addMarker(new MarkerOptions()
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW))
+                    .position(latLng)
+                    .zIndex(20));
+        else
+            currentPositionMarker.setPosition(latLng);
+
+
+        googleMap.animateCamera(CameraUpdateFactory
+                .newCameraPosition(cameraPosition));
+
+
     }
 
     public boolean checkLocationPermission() {
@@ -167,5 +205,36 @@ public class MainActivity extends AppCompatActivity
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+
+        // googleMap.setMinZoomPreference(8);
+
+        this.googleMap = googleMap;
+
+        boolean success = googleMap.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                        this, R.raw.map));
+
+        //23.884976, 90.390117
+/*
+        googleMap.addMarker(new MarkerOptions()
+                .position(new LatLng(23.884976, 90.390117))
+                .title("LinkedIn")
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+        *//*googleMap.addMarker(new MarkerOptions()
+                .position(new LatLng(37.4629101,-122.2449094))
+                .title("Facebook")
+                .snippet("Facebook HQ: Menlo Park"));
+
+        googleMap.addMarker(new MarkerOptions()
+                .position(new LatLng(37.3092293, -122.1136845))
+                .title("Apple"));*//*
+
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(23.884976, 90.390117), 14));*/
+
     }
 }
